@@ -8,7 +8,8 @@
 #include <gsl/gsl_rng.h>
 
 
-double brekfis(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, double *y_time, const ParamConfig *config,  ParamInit *init, Param *param);
+double brekfis(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, double *y_time, const ParamConfig *config, ParamInit *init, Param *param);
+double brekfis_parallel(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, double *y_time, const ParamConfig *config, ParamInit *init, const Param *param);
 
 /**
  * run brekfis. It will call gsl_multimin_fminimizer to minize the brekfis_obj() function with nmsimplex2 algorithm.

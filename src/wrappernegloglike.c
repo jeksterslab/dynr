@@ -81,7 +81,7 @@ double function_neg_log_like(const double *params, void *data){
 	data_model.pc.func_transform(par.func_param);
 	model_constraint_init(&data_model.pc, &pi);
 	
-	neg_log_like = brekfis(data_model.y, data_model.co_variate, data_model.pc.total_obs, data_model.y_time, &data_model.pc, &pi, &par);
+	neg_log_like = brekfis_parallel(data_model.y, data_model.co_variate, data_model.pc.total_obs, data_model.y_time, &data_model.pc, &pi, &par);
 	// Carry verbose argument from mainR.c into this function and only print the likelihood
 	//  here if requested.
 	if(data_model.pc.verbose_flag){
@@ -112,6 +112,5 @@ double function_neg_log_like(const double *params, void *data){
 	
 	return neg_log_like;
 }
-
 
 

@@ -28,6 +28,9 @@
 #include <gsl/gsl_linalg.h>
 #include <time.h>
 #include "print_function.h"
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 /**
  * This method implements a one-step brekfis
@@ -38,7 +41,7 @@
  * @param param the model and user-defined function parameters
  * @return log-likelihood
  */
-double brekfis(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, double *y_time, const ParamConfig *config, ParamInit *init, Param *param){
+static double brekfis_range(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, double *y_time, const ParamConfig *config, ParamInit *init, Param *param, size_t sbj_begin, size_t sbj_end){
 	int DEBUG_BREKFIS = 0; /*0=false/no; 1=true/yes*/
 	if(DEBUG_BREKFIS){
 		MYPRINT("Called brekfis\n");
@@ -129,7 +132,7 @@ double brekfis(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, doub
 	
 	
 	/********************************************************************************/
-	for(sbj=0; sbj < config->num_sbj; sbj++){
+	for(sbj=sbj_begin; sbj < sbj_end; sbj++){
 		for(t=(config->index_sbj)[sbj]; t < (config->index_sbj)[sbj+1]; t++){
 			
 			
@@ -426,6 +429,62 @@ double brekfis(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, doub
 	gsl_matrix_free(modif_p);
 	
 	return(-log_like);
+}
+
+
+static void param_clone(const ParamConfig *config, const Param *source, Param *target){
+    target->func_param = (double *)malloc(config->num_func_param * sizeof(double));
+    memcpy(target->func_param, source->func_param, config->num_func_param * sizeof(double));
+    target->eta_noise_cov = gsl_matrix_calloc(config->dim_latent_var, config->dim_latent_var);
+    target->y_noise_cov = gsl_matrix_calloc(config->dim_obs_var, config->dim_obs_var);
+    target->regime_switch_mat = gsl_matrix_calloc(config->num_regime, config->num_regime);
+}
+
+static void param_free(Param *param){
+    gsl_matrix_free(param->regime_switch_mat);
+    gsl_matrix_free(param->eta_noise_cov);
+    gsl_matrix_free(param->y_noise_cov);
+    free(param->func_param);
+}
+
+double brekfis(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, double *y_time, const ParamConfig *config, ParamInit *init, Param *param){
+    return brekfis_range(y, co_variate, total_time, y_time, config, init, param, 0, config->num_sbj);
+}
+
+double brekfis_parallel(gsl_vector ** y, gsl_vector **co_variate, size_t total_time, double *y_time, const ParamConfig *config, ParamInit *init, const Param *param){
+    int requested_threads = config->n_threads;
+    double total_neg_log_like = 0.0;
+
+    if(requested_threads <= 1 || config->num_sbj <= 1 || config->verbose_flag){
+        Param local_param;
+        param_clone(config, param, &local_param);
+        total_neg_log_like = brekfis_range(y, co_variate, total_time, y_time, config, init, &local_param, 0, config->num_sbj);
+        param_free(&local_param);
+        return total_neg_log_like;
+    }
+
+#ifndef _OPENMP
+    {
+        Param local_param;
+        param_clone(config, param, &local_param);
+        total_neg_log_like = brekfis_range(y, co_variate, total_time, y_time, config, init, &local_param, 0, config->num_sbj);
+        param_free(&local_param);
+    }
+#else
+    if(requested_threads > (int)config->num_sbj){
+        requested_threads = (int)config->num_sbj;
+    }
+
+#pragma omp parallel for schedule(static) num_threads(requested_threads) reduction(+:total_neg_log_like)
+    for(size_t sbj = 0; sbj < config->num_sbj; ++sbj){
+        Param local_param;
+        param_clone(config, param, &local_param);
+        total_neg_log_like += brekfis_range(y, co_variate, total_time, y_time, config, init, &local_param, sbj, sbj + 1);
+        param_free(&local_param);
+    }
+#endif
+
+    return total_neg_log_like;
 }
 
 
@@ -1536,6 +1595,5 @@ void EKimSmoother(double *y_time, gsl_vector **co_variate, const ParamConfig *co
 	
 
 }/*end of function EKimSmoother*/
-
 
 

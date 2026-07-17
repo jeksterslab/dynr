@@ -15,5 +15,5 @@ endif
 
 # combine with standard arguments for R
 # combine with standard arguments for R
-PKG_CPPFLAGS = -I$(LIB_GSL)/include
-PKG_LIBS = -L$(LIB_GSL)/lib -lgsl -lgslcblas
+PKG_CPPFLAGS = -I$(LIB_GSL)/include $(SHLIB_OPENMP_CFLAGS)
+PKG_LIBS = -L$(LIB_GSL)/lib -lgsl -lgslcblas $(SHLIB_OPENMP_CFLAGS)

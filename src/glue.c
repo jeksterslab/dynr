@@ -13,17 +13,17 @@
 
 
 static R_NativePrimitiveArgType main_R_t[] = {
-    VECSXP, VECSXP, LGLSXP, LGLSXP, LGLSXP, LGLSXP, LGLSXP, LGLSXP, INTSXP
+    VECSXP, VECSXP, LGLSXP, LGLSXP, LGLSXP, LGLSXP, LGLSXP, LGLSXP, INTSXP, INTSXP
 };
 
 static R_CMethodDef cMethods[] = {
-   {".BackendC", (DL_FUNC) &main_R, 9, main_R_t},
+   {".BackendC", (DL_FUNC) &main_R, 10, main_R_t},
    {NULL, NULL, 0}
 };
 
 
 static R_CallMethodDef callMethods[] = {
-	{".Backend", (DL_FUNC) main_R, 9},
+	{".Backend", (DL_FUNC) main_R, 10},
 	{NULL, NULL, 0}
 };
 
@@ -32,7 +32,6 @@ void R_init_dynr(DllInfo *info) {
 	R_registerRoutines(info, cMethods, callMethods, NULL, NULL);
 	R_useDynamicSymbols(info, TRUE);
 }
-
 
 
 

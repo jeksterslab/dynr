@@ -69,7 +69,7 @@ SEXP getListElement(SEXP list, const char *str)
  * @param perturb_flag_in a flag of whether latent states should be perturbed. Used for ensemble forecastig.
  * @param seed_in the integer seed to use for backend random number generation
  */
-SEXP main_R(SEXP model_list, SEXP data_list, SEXP weight_flag_in, SEXP debug_flag_in, SEXP optimization_flag_in, SEXP hessian_flag_in, SEXP verbose_flag_in, SEXP perturb_flag_in, SEXP seed_in)
+SEXP main_R(SEXP model_list, SEXP data_list, SEXP weight_flag_in, SEXP debug_flag_in, SEXP optimization_flag_in, SEXP hessian_flag_in, SEXP verbose_flag_in, SEXP perturb_flag_in, SEXP seed_in, SEXP n_threads_in)
 {
 	size_t index,index_col,index_row;
 	bool debug_flag = *LOGICAL(PROTECT(debug_flag_in));
@@ -86,6 +86,8 @@ SEXP main_R(SEXP model_list, SEXP data_list, SEXP weight_flag_in, SEXP debug_fla
 	
 	static Data_and_Model data_model;
 	data_model.pc.verbose_flag = (bool) verbose_flag;
+	data_model.pc.n_threads = Rf_asInteger(n_threads_in);
+	if (data_model.pc.n_threads < 1) data_model.pc.n_threads = 1;
 	
 	/* From the SEXP called model_list, get the list element named "num_sbj" */
 	/*number of subjects*/
@@ -959,5 +961,4 @@ SEXP main_R(SEXP model_list, SEXP data_list, SEXP weight_flag_in, SEXP debug_fla
 
     return res_list;
 }
-
 
